@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Mixpanel VIP — You found it</title>
+<style>
+/* ---------- Fonts ---------- */
+@font-face { font-family:'Garnett'; src:local('Garnett-Regular'),local('Garnett Regular'),url('./assets/fonts/Garnett-Regular.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+@font-face { font-family:'Garnett'; src:local('Garnett-Medium'),local('Garnett Medium'),url('./assets/fonts/Garnett-Medium.woff2') format('woff2'); font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:'Apercu Mono Pro'; src:local('Apercu Mono Pro'),local('ApercuMonoPro'),url('./assets/fonts/apercu-mono-regular-pro.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+
+/* ---------- Tokens ---------- */
+:root{
+  --purple-01:#F2EEFF; --purple-03:#C1B1FF; --purple-04:#A993FF; --purple-06:#7856FF; --purple-09:#2E1670; --purple-10:#150040;
+  --gray-01:#FAFAFA; --gray-02:#F4F4F4; --gray-03:#EAEAEA; --gray-07:#A2A2A2; --gray-08:#797979; --gray-09:#515151; --gray-10:#1F2023;
+  --mint-06:#7FE1D8; --pool-06:#72BEF4; --mustard-06:#F8BC3C; --lava-06:#FF7557;
+  --white:#FFFFFF; --black-70:rgba(0,0,0,.70);
+  --font-sans:'Garnett','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --font-mono:'Apercu Mono Pro','SF Mono',monospace;
+  --r8:8px; --r12:12px; --r16:16px; --r24:24px; --r40:40px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  font-family:var(--font-sans); background:#0b0020; color:var(--gray-10);
+  display:flex; justify-content:center; min-height:100vh;
+}
+/* Phone frame */
+#app{
+  width:100%; max-width:430px; min-height:100vh; position:relative; overflow:hidden;
+  background:var(--gray-01);
+}
+.screen{ display:none; min-height:100vh; flex-direction:column; }
+.screen.active{ display:flex; animation:fade .4s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+/* ---------- Reveal (Mode 3 dark) ---------- */
+#reveal{ background:var(--purple-10); color:var(--white); align-items:center; justify-content:center; text-align:center; padding:32px; }
+#reveal .mark{ width:96px; height:96px; opacity:0; transform:scale(.6); animation:pop .7s .15s cubic-bezier(.2,.9,.3,1.4) forwards; }
+#reveal h1{ font-weight:500; font-size:40px; line-height:1.15; letter-spacing:-.02em; margin:28px 0 12px; opacity:0; animation:rise .6s .55s ease forwards; }
+#reveal p{ color:rgba(255,255,255,.70); font-size:17px; line-height:1.6; max-width:300px; margin:0 0 36px; opacity:0; animation:rise .6s .8s ease forwards; }
+#reveal .cta{ opacity:0; animation:rise .6s 1.05s ease forwards; }
+@keyframes pop{ to{opacity:1; transform:scale(1);} }
+@keyframes rise{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;} }
+
+/* ---------- Buttons ---------- */
+.btn{ font-family:var(--font-sans); font-weight:500; font-size:16px; border:none; border-radius:var(--r40); padding:13px 26px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:transform .12s, background .15s; }
+.btn:active{ transform:scale(.97); }
+.btn-light{ background:var(--white); color:var(--gray-10); }        /* on dark bg */
+.btn-dark{ background:var(--gray-10); color:var(--white); }          /* on light bg */
+.btn-dark:hover{ background:#34353a; }
+.btn-block{ width:100%; justify-content:center; }
+.btn .arr{ width:8px; height:12px; }
+
+/* ---------- Select screen ---------- */
+.pad{ padding:28px 22px 40px; }
+.eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--purple-06); margin:0 0 10px; }
+.h2{ font-weight:500; font-size:27px; line-height:1.2; letter-spacing:-.02em; margin:0 0 8px; }
+.sub{ color:var(--black-70); font-size:15px; line-height:1.55; margin:0 0 24px; }
+.choice-row{ display:flex; flex-direction:column; gap:12px; margin-bottom:28px; }
+.choice{ text-align:left; background:var(--white); border:1.5px solid var(--gray-03); border-radius:var(--r16); padding:18px 18px; cursor:pointer; transition:border-color .15s, background .15s, transform .12s; display:flex; align-items:center; gap:14px; }
+.choice:active{ transform:scale(.99); }
+.choice.sel{ border-color:var(--purple-06); background:var(--purple-01); }
+.choice .ic{ width:42px; height:42px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--purple-01); }
+.choice .ic svg{ width:24px; height:24px; color:var(--purple-06); }
+.choice.sel .ic{ background:var(--white); }
+.choice b{ font-weight:500; font-size:17px; display:block; }
+.choice small{ color:var(--gray-08); font-size:13px; line-height:1.45; }
+
+.tags{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
+.tag{ font-family:var(--font-sans); font-size:14px; padding:9px 15px; border-radius:var(--r40); border:1.5px solid var(--gray-03); background:var(--white); color:var(--gray-09); cursor:pointer; transition:all .14s; }
+.tag.sel{ background:var(--purple-06); border-color:var(--purple-06); color:var(--white); }
+.tag:disabled{ opacity:.4; cursor:default; }
+.hint{ font-size:12.5px; color:var(--gray-07); margin:14px 0 26px; font-family:var(--font-mono); }
+
+/* ---------- Hub ---------- */
+#hub{ background:var(--gray-01); }
+.hub-top{ background:var(--purple-10); color:var(--white); padding:22px 22px 26px; border-radius:0 0 var(--r24) var(--r24); }
+.hub-top .row{ display:flex; align-items:center; justify-content:space-between; }
+.hub-top .wm{ height:20px; }
+.hub-top .who{ font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6); }
+.hub-top h2{ font-weight:500; font-size:24px; line-height:1.2; letter-spacing:-.02em; margin:18px 0 4px; }
+.hub-top p{ color:rgba(255,255,255,.7); font-size:14px; margin:0; }
+.tiles{ padding:18px 16px 8px; display:flex; flex-direction:column; gap:13px; }
+.tile{ background:var(--white); border:1px solid var(--gray-03); border-radius:var(--r16); padding:18px; cursor:pointer; transition:transform .12s, box-shadow .15s; display:flex; gap:15px; align-items:flex-start; text-align:left; width:100%; }
+.tile:active{ transform:scale(.99); }
+.tile .tic{ width:46px; height:46px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+.tile .tic svg{ width:24px; height:24px; }
+.tile h3{ font-weight:500; font-size:17.5px; margin:1px 0 4px; }
+.tile p{ color:var(--gray-08); font-size:13.5px; line-height:1.5; margin:0; }
+.tile .go{ margin-left:auto; align-self:center; color:var(--gray-07); font-size:20px; flex:none; }
+.t-hero{ background:linear-gradient(180deg,#FFF0ED 0%,#FFBFB1 32%,#7856FF 88%,#5F41CF 100%); border:none; color:var(--white); }
+.t-hero h3{ color:var(--white); } .t-hero p{ color:rgba(255,255,255,.85); }
+.t-hero .tic{ background:rgba(255,255,255,.18); } .t-hero .tic svg{ color:var(--white); }
+.t-hero .go{ color:rgba(255,255,255,.8); }
+.tic-purple{ background:var(--purple-01); } .tic-purple svg{ color:var(--purple-06); }
+
+/* survey footer */
+.survey{ margin:6px 16px 26px; background:var(--purple-01); border-radius:var(--r16); padding:18px; }
+.survey .q{ font-weight:500; font-size:15px; margin:0 0 13px; }
+.survey .opts{ display:flex; flex-wrap:wrap; gap:8px; }
+.survey .opt{ font-family:var(--font-sans); font-size:13.5px; padding:8px 13px; border-radius:var(--r40); border:1.5px solid var(--purple-03); background:var(--white); color:var(--purple-09); cursor:pointer; }
+.survey .opt.sel{ background:var(--purple-06); color:var(--white); border-color:var(--purple-06); }
+.survey .thanks{ font-size:13.5px; color:var(--purple-09); margin:4px 0 0; display:none; }
+
+/* ---------- Detail screens ---------- */
+.detail{ background:var(--gray-01); }
+.dhead{ position:sticky; top:0; background:var(--gray-01); padding:18px 18px 10px; display:flex; align-items:center; gap:12px; z-index:5; border-bottom:1px solid var(--gray-03); }
+.back{ background:var(--white); border:1px solid var(--gray-03); border-radius:50%; width:38px; height:38px; flex:none; font-size:18px; cursor:pointer; color:var(--gray-10); }
+.dhead h2{ font-weight:500; font-size:19px; margin:0; }
+.dbody{ padding:18px; display:flex; flex-direction:column; gap:13px; }
+
+.card{ background:var(--white); border:1px solid var(--gray-03); border-radius:var(--r12); padding:16px; }
+.card .lbl{ font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--purple-06); margin:0 0 6px; }
+.card h4{ font-weight:500; font-size:16px; margin:0 0 5px; }
+.card p{ color:var(--gray-08); font-size:13.5px; line-height:1.5; margin:0; }
+.card .meta{ color:var(--gray-07); font-family:var(--font-mono); font-size:11.5px; margin-top:8px; }
+
+.video{ display:flex; gap:13px; align-items:center; text-decoration:none; color:inherit; }
+.video .thumb{ width:78px; height:52px; border-radius:8px; flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.video .thumb svg{ width:22px; height:22px; }
+.icebreaker{ background:var(--purple-10); color:#fff; border-radius:var(--r16); padding:18px; }
+.icebreaker .lbl{ color:var(--mint-06); }
+.icebreaker p{ color:#fff; font-size:16px; line-height:1.5; margin:6px 0 0; }
+.plan-item{ display:flex; gap:13px; align-items:flex-start; }
+.plan-item .num{ width:26px; height:26px; flex:none; border-radius:50%; background:var(--purple-06); color:#fff; font-family:var(--font-mono); font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.placeholder{ outline:1.5px dashed var(--purple-04); outline-offset:2px; }
+.pill-note{ display:inline-block; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--purple-06); background:var(--purple-01); padding:3px 8px; border-radius:6px; margin-top:10px; }
+
+.book-cta{ margin-top:6px; }
+.confirm{ display:none; background:#fff; border:1px solid var(--gray-03); border-radius:var(--r12); padding:16px; text-align:center; }
+.confirm svg{ width:34px; height:34px; color:var(--mint-06); }
+.confirm h4{ margin:8px 0 4px; font-weight:500; }
+.confirm p{ color:var(--gray-08); font-size:13.5px; margin:0; }
+
+/* Loom modal */
+#loom-modal{ display:none; position:fixed; inset:0; z-index:100; background:rgba(11,0,32,.92); align-items:center; justify-content:center; padding:20px; }
+#loom-modal.open{ display:flex; animation:fade .25s ease; }
+.loom-inner{ position:relative; width:100%; max-width:430px; }
+.loom-close{ position:absolute; top:-38px; right:0; background:rgba(255,255,255,.15); border:none; color:#fff; font-size:20px; width:34px; height:34px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.loom-wrap{ position:relative; padding-bottom:56.25%; height:0; border-radius:var(--r16); overflow:hidden; }
+.loom-wrap iframe{ position:absolute; top:0; left:0; width:100%; height:100%; border:none; }
+
+/* events dev pill */
+#evtpill{ position:fixed; bottom:14px; right:14px; z-index:50; background:var(--gray-10); color:#fff; font-family:var(--font-mono); font-size:11px; padding:8px 12px; border-radius:var(--r40); cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.25); display:flex; align-items:center; gap:7px; }
+#evtpill .dot{ width:7px; height:7px; border-radius:50%; background:var(--mint-06); }
+#evtlog{ position:fixed; inset:auto 14px 60px 14px; max-width:402px; margin:0 auto; z-index:49; background:#0b0020; color:#fff; border-radius:var(--r16); padding:16px; max-height:55vh; overflow:auto; display:none; box-shadow:0 8px 40px rgba(0,0,0,.5); }
+#evtlog h5{ margin:0 0 4px; font-weight:500; font-size:14px; }
+#evtlog .note{ color:rgba(255,255,255,.55); font-size:11.5px; font-family:var(--font-mono); margin:0 0 12px; }
+#evtlog .e{ font-family:var(--font-mono); font-size:11.5px; padding:7px 0; border-top:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.85); }
+#evtlog .e b{ color:var(--mint-06); font-weight:400; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 1. REVEAL -->
+  <section id="reveal" class="screen active">
+    <svg class="mark" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M48.0089 61.4121H61.3939C58.0516 59.3212 56.8002 56.3908 55.1212 50.9576L50.0998 32.3454C47.803 23.9817 45.918 20.0059 36.7149 20.0059H17.4849V25.0272H20.2094C25.8485 25.0272 26.4821 27.1181 28.1612 33.3908L32.5489 49.7062C34.8457 57.658 38.4098 61.4121 48.0247 61.4121H48.0089ZM78.9765 61.4121H92.3456C101.961 61.4121 105.303 57.6422 107.616 49.7062L112.003 33.3908C113.682 27.1181 114.506 25.0272 119.955 25.0272H122.68V20.0059H103.655C94.2464 20.0059 92.3614 23.7758 90.2705 32.3454L85.2492 50.9576C83.5701 56.5967 82.3188 59.3212 78.9765 61.4121ZM61.3939 78.963H78.977L78.9765 61.4121H61.3939V78.963ZM17.4849 120.369H36.7149C45.918 120.369 47.803 116.393 50.0998 108.03L55.1212 89.4176C56.8002 83.9844 58.0516 81.054 61.3939 78.963H48.0089C38.3939 78.963 34.8299 82.733 32.533 90.6689L28.1453 106.984C26.4663 113.257 25.8485 115.348 20.1935 115.348H17.4849V120.369ZM103.624 120.369H122.648V115.348H119.923C114.49 115.348 113.651 113.257 111.972 106.984L107.584 90.6689C105.287 82.7172 101.945 78.963 92.3139 78.963H78.977C82.3193 81.054 83.5226 83.7785 85.2017 89.4176L90.223 108.03C92.3139 116.599 94.1989 120.369 103.608 120.369H103.624Z" fill="white"/></svg>
+    <h1>You found it.</h1>
+    <p>Welcome to the room behind the QR. Two taps and tonight gets a little more useful.</p>
+    <button class="btn btn-light cta" onclick="go('select')">Let's go <svg class="arr" viewBox="0 0 6.504 9.912" fill="currentColor"><path d="M6.504 4.968L1.176 9.912L0 8.76L3.216 5.88L4.176 4.957L3.216 4.032L0 1.176L1.176 0L6.504 4.968Z"/></svg></button>
+  </section>
+
+  <!-- 2. SELECT -->
+  <section id="select" class="screen">
+    <div class="pad">
+      <p class="eyebrow">Step 1 of 2</p>
+      <h2 class="h2">First — who are you tonight?</h2>
+      <p class="sub">So we point you at the right people and the right next step.</p>
+      <div class="choice-row">
+        <button class="choice" data-aud="customer" onclick="pickAud(this)">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.2 4.5 5 .7-3.6 3.5.85 5L12 14.8 7.55 16.7l.85-5L4.8 8.2l5-.7L12 3z"/></svg></span>
+          <span><b>I'm a customer</b><small>Already building on Mixpanel</small></span>
+        </button>
+        <button class="choice" data-aud="prospect" onclick="pickAud(this)">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+          <span><b>I'm exploring</b><small>Curious what Mixpanel can do</small></span>
+        </button>
+      </div>
+
+      <div id="tagsBlock" style="display:none;">
+        <p class="eyebrow">Step 2 of 2</p>
+        <h2 class="h2">What are you into?</h2>
+        <p class="sub">Pick up to 2. We'll tailor your plan for tonight.</p>
+        <div class="tags" id="tags"></div>
+        <p class="hint" id="taghint">0 / 2 selected</p>
+        <button class="btn btn-dark btn-block" id="toHub" disabled style="opacity:.4;" onclick="enterHub()">Show me the room <svg class="arr" viewBox="0 0 6.504 9.912" fill="currentColor"><path d="M6.504 4.968L1.176 9.912L0 8.76L3.216 5.88L4.176 4.957L3.216 4.032L0 1.176L1.176 0L6.504 4.968Z"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. HUB -->
+  <section id="hub" class="screen">
+    <div class="hub-top">
+      <div class="row">
+        <svg class="wm" viewBox="0 0 400 95" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 73.4194H23.9775V70.8713H22.1769C18.6724 70.8713 17.8284 69.9148 17.8284 66.4183V34.8047C20.2719 30.6651 23.5595 28.0125 27.6991 28.0125C32.8997 28.0125 36.0827 31.8306 36.0827 39.0488V66.4263C36.0827 69.9309 35.2307 70.8794 31.8386 70.8794H29.9256V73.4274H53.3725V70.8794H51.6765C48.1719 70.8794 47.3279 69.9228 47.3279 66.4263V37.8752C47.3279 36.9187 47.3279 35.9622 47.2234 35.0137C49.5545 30.7696 53.0591 28.0125 57.1986 28.0125C62.3993 28.0125 65.5823 31.8306 65.5823 39.0488V66.4263C65.5823 69.9309 64.7303 70.8794 61.3382 70.8794H59.4252V73.4274H82.8721V70.8794H81.2806C77.6715 70.8794 76.8275 69.9228 76.8275 66.4263V37.8752C76.8275 27.1605 70.7829 21.2204 61.9732 21.2204C55.3981 21.2204 49.667 24.8295 46.5884 32.0396C44.7879 25.0385 39.4828 21.2204 32.4737 21.2204C26.212 21.2204 20.8024 24.6125 17.8284 31.4046V22.4904H0V25.0385H2.12204C5.73112 25.0385 6.57511 25.995 6.57511 29.4915V66.4183C6.57511 69.9228 5.72308 70.8713 2.12204 70.8713H0V73.4194ZM96.9789 14.0023C100.797 14.0023 103.98 10.8192 103.98 7.00113C103.98 3.18306 100.797 0 96.9789 0C93.1608 0 89.9777 3.18306 89.9777 7.00113C89.9777 10.8192 93.1608 14.0023 96.9789 14.0023ZM85.0987 73.4194H108.65V70.8713H107.059C103.554 70.8713 102.71 69.9148 102.71 66.4183V22.4904H84.8816V25.0385H87.0037C90.6127 25.0385 91.4567 25.995 91.4567 29.4915V66.4183C91.4567 69.9228 90.6047 70.8713 87.0037 70.8713H85.0906V73.4194H85.0987ZM125.843 43.5018H132.636C130.94 42.4408 130.305 40.9538 129.453 38.1967L126.904 28.752C125.739 24.508 124.782 22.4904 120.112 22.4904H110.354V25.0385H111.737C114.598 25.0385 114.92 26.0995 115.772 29.2826L117.998 37.5617C119.164 41.5968 120.972 43.5018 125.851 43.5018H125.843ZM141.55 43.5018H148.342C153.221 43.5018 154.917 41.5888 156.091 37.5617L158.317 29.2826C159.169 26.0995 159.587 25.0385 162.352 25.0385H163.735V22.4904H154.081C149.306 22.4904 148.35 24.4035 147.289 28.752L144.741 38.1967C143.889 41.0583 143.246 42.4408 141.55 43.5018ZM132.636 52.416H141.55V43.5018H132.636V52.416ZM110.354 73.4274H120.112C124.782 73.4274 125.739 71.4099 126.904 67.1658L129.453 57.7211C130.305 54.9641 130.94 53.477 132.636 52.416H125.843C120.964 52.416 119.156 54.3291 117.99 58.3561L115.764 66.6353C114.912 69.8184 114.598 70.8794 111.729 70.8794H110.346V73.4274H110.354ZM154.065 73.4274H163.719V70.8794H162.336C159.579 70.8794 159.153 69.8184 158.301 66.6353L156.074 58.3561C154.909 54.321 153.213 52.416 148.326 52.416H141.55C143.246 53.477 143.865 54.8596 144.717 57.7211L147.265 67.1658C148.326 71.5144 149.282 73.4274 154.057 73.4274H154.065ZM165.101 94.6478H189.714V92.0998H187.166C183.774 92.0998 182.922 91.1432 182.922 87.6467V67.3828C186 71.9484 191.201 74.7055 197.35 74.7055C208.917 74.7055 218.144 64.5213 218.144 46.91C218.144 30.9947 209.447 21.2365 198.194 21.2365C191.619 21.2365 186.097 25.0545 182.913 31.8467V22.5065H165.085V25.0545H167.207C170.712 25.0545 171.66 26.0111 171.66 29.5076V87.6387C171.66 91.1432 170.704 92.0917 167.207 92.0917H165.085V94.6398L165.101 94.6478ZM194.175 27.8036C201.071 27.8036 206.698 34.2742 206.698 47.1109C206.698 61.1132 201.497 68.7573 194.392 68.7573C189.826 68.7573 185.799 66.3138 182.93 62.0697V35.7532C185.687 30.5526 189.617 27.7955 194.175 27.7955V27.8036ZM234.92 74.4885C241.816 74.4885 247.33 71.2009 251.47 63.7737V64.9393C251.47 71.3054 255.505 74.0624 262.185 74.0624C264.202 74.0624 266.75 73.8535 268.446 73.3229V70.6704C267.594 70.8794 266.959 70.9919 266.324 70.9919C263.672 70.9919 262.82 69.4004 262.82 66.8523V39.6838C262.82 27.1605 255.818 21.2204 244.043 21.2204C236.19 21.2204 228.553 24.8295 223.674 28.6475L225.37 31.6216C230.466 28.117 235.45 26.1075 240.86 26.1075C247.861 26.1075 251.47 29.9256 251.47 38.8398V41.1708L238.416 46.2669C226.536 51.146 222.179 55.7116 222.179 62.6082C222.179 69.5049 227.058 74.4885 234.912 74.4885H234.92ZM233.328 59.8431C233.328 54.538 236.407 50.72 242.668 47.9629L251.478 44.1449V60.6952C248.19 65.2608 244.372 67.9133 240.233 67.9133C236.093 67.9133 233.336 65.0518 233.336 59.8512L233.328 59.8431ZM270.568 73.4274H294.763V70.8794H292.745C289.241 70.8794 288.397 69.9228 288.397 66.4263V34.9092C290.84 30.6651 294.441 28.0125 298.685 28.0125C304.199 28.0125 307.704 31.8306 307.704 39.0488V66.4263C307.704 69.9309 306.852 70.8794 303.46 70.8794H301.442V73.4274H325.524V70.8794H323.402C319.793 70.8794 318.949 69.9228 318.949 66.4263V37.8752C318.949 27.1605 312.583 21.2204 303.564 21.2204C296.989 21.2204 291.467 24.6125 288.389 31.4046V22.4904H270.56V25.0385H272.682C276.291 25.0385 277.135 25.995 277.135 29.4915V66.4183C277.135 69.9228 276.283 70.8713 272.682 70.8713H270.56V73.4194L270.568 73.4274ZM353.111 74.6974C360.112 74.6974 366.695 71.5144 371.47 67.6963L369.878 65.3653C365.634 68.4438 360.859 69.8184 356.406 69.8184C345.587 69.8184 339.221 62.1822 339.221 47.3279V45.4149H372.748C372.539 31.0911 363.729 21.3329 350.892 21.3329C338.056 21.3329 327.759 32.8997 327.759 48.18C327.759 64.9473 337.308 74.7055 353.119 74.7055L353.111 74.6974ZM350.989 23.9775C357.355 23.9775 361.277 30.8741 361.92 42.5453H339.43C340.387 30.7696 344.84 23.9775 350.997 23.9775H350.989ZM375.071 73.4194H399.683V70.8713H397.24C393.735 70.8713 392.891 69.9148 392.891 66.4183V1.27001H375.063V3.81807H377.185C380.689 3.81807 381.638 4.77459 381.638 8.27114V66.4183C381.638 69.9228 380.681 70.8713 377.185 70.8713H375.063V73.4194H375.071Z" fill="white"/></svg>
+        <span class="who" id="whoLabel">Customer</span>
+      </div>
+      <h2 id="hubGreeting">Here's your room.</h2>
+      <p id="hubSub">Quick, soundless, yours. Tap anything.</p>
+    </div>
+
+    <div class="tiles">
+      <button class="tile t-hero" onclick="go('d-plan')">
+        <span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5L19 19M19 5l-2.5 2.5M7.5 16.5L5 19"/><circle cx="12" cy="12" r="3.2"/></svg></span>
+        <span><h3>Worth your time</h3><p>Your 3-step plan for tonight, picked for you.</p></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="tile" onclick="go('d-happening')">
+        <span class="tic tic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-5.2-7-11a7 7 0 0114 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+        <span><h3>What's happening here</h3><p>Food, bar, swag, product stations — the map.</p></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="tile" onclick="go('d-demos')">
+        <span class="tic tic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg></span>
+        <span><h3>Demos for you</h3><p>New features, captioned for a loud room.</p></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="tile" onclick="openLoom()">
+        <span class="tic" style="background:#f2eeff;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple-06)" stroke-width="1.6"><polygon points="5 3 19 12 5 21 5 3" fill="var(--purple-06)" stroke="none"/></svg></span>
+        <span><h3>AI in action</h3><p>Watch the Mixpanel Agent demo — in Hebrew.</p></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="tile" onclick="go('d-book')">
+        <span class="tic tic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 2.5v4M16 2.5v4"/><path d="M8.5 14l2 2 4-4"/></svg></span>
+        <span><h3 id="bookTileTitle">Leave with a plan</h3><p id="bookTileSub">Grab 15 min with a Solution Engineer.</p></span>
+        <span class="go">›</span>
+      </button>
+    </div>
+
+    <div class="survey">
+      <p class="q">One quick one — what brought you tonight?</p>
+      <div class="opts" id="surveyOpts">
+        <button class="opt" data-val="See what's new">See what's new</button>
+        <button class="opt" data-val="Meet the team">Meet the team</button>
+        <button class="opt" data-val="Network">Network</button>
+        <button class="opt" data-val="Food & fun">Food &amp; fun</button>
+      </div>
+      <p class="thanks" id="surveyThanks">Got it — thanks. Added to your recap.</p>
+    </div>
+  </section>
+
+  <!-- DETAIL: PLAN -->
+  <section id="d-plan" class="screen detail">
+    <div class="dhead"><button class="back" onclick="go('hub')">‹</button><h2>Worth your time</h2></div>
+    <div class="dbody" id="planBody"><!-- filled by JS --></div>
+  </section>
+
+  <!-- DETAIL: HAPPENING -->
+  <section id="d-happening" class="screen detail">
+    <div class="dhead"><button class="back" onclick="go('hub')">‹</button><h2>What's happening here</h2></div>
+    <div class="dbody" id="happeningBody"><!-- filled by JS --></div>
+  </section>
+
+  <!-- DETAIL: DEMOS -->
+  <section id="d-demos" class="screen detail">
+    <div class="dhead"><button class="back" onclick="go('hub')">‹</button><h2>Demos for you</h2></div>
+    <div class="dbody" id="demosBody"><!-- filled by JS --></div>
+  </section>
+
+  <!-- DETAIL: BOOK -->
+  <section id="d-book" class="screen detail">
+    <div class="dhead"><button class="back" onclick="go('hub')">‹</button><h2 id="bookHead">Leave with a plan</h2></div>
+    <div class="dbody" id="bookBody"><!-- filled by JS --></div>
+  </section>
+
+</div>
+
+<!-- Loom modal: Mixpanel Agent demo in Hebrew -->
+<div id="loom-modal" onclick="closeLoom(event)">
+  <div class="loom-inner">
+    <button class="loom-close" onclick="closeLoom()">✕</button>
+    <div style="color:rgba(255,255,255,.55); font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px;">Mixpanel Agent · Live Demo</div>
+    <h3 style="color:#fff; font-weight:500; font-size:20px; margin:0 0 14px; letter-spacing:-.02em;">AI בפעולה — הסוכן של Mixpanel</h3>
+    <div class="loom-wrap">
+      <iframe src="https://www.loom.com/embed/68b47059fe7e4990adbe7ae4cd8eb086" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+    </div>
+    <p style="color:rgba(255,255,255,.55); font-size:13px; margin:12px 0 0; text-align:center;">שאלות בעברית. תוצאות בזמן אמת.</p>
+  </div>
+</div>
+
+<!-- events dev pill (demonstrates Mixpanel instrumentation) -->
+<div id="evtpill" onclick="toggleLog()"><span class="dot"></span><span id="evtcount">0</span> events</div>
+<div id="evtlog">
+  <h5>Live event stream</h5>
+  <p class="note">// stand-in for mixpanel.track() — every tap is captured</p>
+  <div id="evtlist"></div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — your team edits ONLY this block to go live.
+   Swap booking links, video URLs, and station content.
+   ============================================================ */
+const CONFIG = {
+  eventName: "Mixpanel VIP — Tel Aviv",
+  // Booking links. PLACEHOLDERS — paste real scheduling URLs.
+  booking: {
+    customer: { role:"Solution Engineer", url:"#REPLACE_SE_BOOKING_LINK",
+                blurb:"Walk out with a tailored next step for your team — 15 minutes, on the spot." },
+    prospect: { role:"Account Executive",  url:"#REPLACE_AE_BOOKING_LINK",
+                blurb:"See what Mixpanel could do for your stack — 15 minutes, no slides." }
+  },
+  // Interest tags shown on the select screen.
+  interests: [
+    { id:"retention",  label:"Retention",        demo:"New retention report",        station:"Retention bar (Station 2)" },
+    { id:"funnels",    label:"Funnels",          demo:"Funnels, rebuilt",            station:"Funnels booth (Station 1)" },
+    { id:"replay",     label:"Session Replay",   demo:"Session Replay walkthrough",  station:"Replay lounge (Station 4)" },
+    { id:"warehouse",  label:"Warehouse Connectors", demo:"Warehouse Connectors demo", station:"Data integration desk (Station 5)" },
+    { id:"experiments",label:"Experiments",      demo:"Experiments overview",        station:"Experiments table (Station 3)" },
+    { id:"dashboards", label:"Boards & reports", demo:"Boards refresh",              station:"Reporting corner (Station 6)" }
+  ],
+  // Demo videos. PLACEHOLDER urls — paste YouTube/Vimeo/Loom links + confirm features.
+  demos: [
+    { id:"retention",  title:"New retention report",      len:"1:10", url:"#REPLACE_VIDEO_RETENTION",  color:"var(--purple-06)" },
+    { id:"funnels",    title:"Funnels, rebuilt",          len:"0:55", url:"#REPLACE_VIDEO_FUNNELS",    color:"var(--pool-06)" },
+    { id:"replay",     title:"Session Replay walkthrough", len:"1:25", url:"#REPLACE_VIDEO_REPLAY",     color:"var(--lava-06)" },
+    { id:"warehouse",  title:"Warehouse Connectors",      len:"1:05", url:"#REPLACE_VIDEO_WAREHOUSE",  color:"var(--mint-06)" },
+    { id:"experiments",title:"Experiments overview",      len:"1:15", url:"#REPLACE_VIDEO_EXPERIMENTS",color:"var(--mustard-06)" },
+    { id:"dashboards", title:"Boards refresh",            len:"0:48", url:"#REPLACE_VIDEO_DASHBOARDS", color:"var(--purple-04)" }
+  ],
+  // What's happening — PLACEHOLDER sample content. Swap for the real venue.
+  happening: [
+    { group:"Product stations", items:["Funnels booth — Station 1","Retention bar — Station 2","Experiments table — Station 3","Session Replay lounge — Station 4","Data integration desk — Station 5","Reporting corner — Station 6"] },
+    { group:"Food & drink", items:["Main bar — by the entrance","Cocktail cart — center floor","Street-food stands — terrace"] },
+    { group:"Swag", items:["Swag station — near the DJ","Premium swag — unlock by booking a session"] }
+  ],
+  // Icebreakers keyed to interest. Generic fallback used if no match.
+  icebreakers: {
+    retention:   "Ask someone near the retention bar: what's the one number you check every morning?",
+    funnels:     "Ask the person next to you where their funnel leaks most — bet they have a story.",
+    replay:      "Ask someone: what's the weirdest thing you've ever seen a user do in a session?",
+    warehouse:   "Ask around: who's piping their warehouse into product analytics yet — and how's it going?",
+    experiments: "Ask someone what experiment surprised them most this year.",
+    dashboards:  "Ask the person beside you which dashboard they actually open daily.",
+    _default:    "Ask the person next to you what they're hoping to see tonight."
+  }
+};
+
+/* ============================================================
+   App state + tracking stub
+   ============================================================ */
+const state = { audience:null, tags:[], survey:null, booked:false };
+let evtCount = 0;
+function track(event, props={}){
+  evtCount++;
+  document.getElementById('evtcount').textContent = evtCount;
+  const payload = Object.assign({ audience:state.audience, tags:state.tags.join(',') }, props);
+  // === In production this is: mixpanel.track(event, payload) ===
+  console.log('[track]', event, payload);
+  const row = document.createElement('div');
+  row.className = 'e';
+  row.innerHTML = '<b>'+event+'</b> ' + (Object.keys(props).length? JSON.stringify(props):'');
+  const list = document.getElementById('evtlist');
+  list.insertBefore(row, list.firstChild);
+}
+function toggleLog(){ const l=document.getElementById('evtlog'); l.style.display = l.style.display==='block'?'none':'block'; }
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('app').scrollTop = 0; window.scrollTo(0,0);
+  track('Screen Viewed', { screen:id });
+}
+
+/* ---- Select ---- */
+function pickAud(el){
+  document.querySelectorAll('.choice').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  state.audience = el.dataset.aud;
+  track('Audience Selected', { audience:state.audience });
+  buildTags();
+  document.getElementById('tagsBlock').style.display='block';
+  document.getElementById('tagsBlock').scrollIntoView({behavior:'smooth'});
+}
+function buildTags(){
+  const wrap = document.getElementById('tags'); wrap.innerHTML='';
+  CONFIG.interests.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tag'; b.textContent=t.label; b.dataset.id=t.id;
+    b.onclick=()=>toggleTag(b,t.id);
+    wrap.appendChild(b);
+  });
+}
+function toggleTag(b,id){
+  const i=state.tags.indexOf(id);
+  if(i>-1){ state.tags.splice(i,1); b.classList.remove('sel'); }
+  else { if(state.tags.length>=2) return; state.tags.push(id); b.classList.add('sel'); }
+  document.getElementById('taghint').textContent = state.tags.length+' / 2 selected';
+  const btn=document.getElementById('toHub');
+  const ok=state.tags.length>0;
+  btn.disabled=!ok; btn.style.opacity=ok?1:.4;
+  track('Interest Toggled', { tags:state.tags.join(',') });
+}
+function enterHub(){
+  buildHub(); go('hub');
+}
+
+/* ---- Hub personalization ---- */
+function tagLabel(id){ const t=CONFIG.interests.find(x=>x.id===id); return t?t.label:id; }
+function buildHub(){
+  const isCust = state.audience==='customer';
+  document.getElementById('whoLabel').textContent = isCust?'Customer':'Exploring';
+  const niceTags = state.tags.map(tagLabel).join(' + ');
+  document.getElementById('hubGreeting').textContent = niceTags ? 'Built around '+niceTags+'.' : "Here's your room.";
+  document.getElementById('hubSub').textContent = 'Quick, soundless, yours. Tap anything.';
+  // book tile copy by audience
+  const b = isCust?CONFIG.booking.customer:CONFIG.booking.prospect;
+  document.getElementById('bookTileTitle').textContent = isCust?'Leave with a plan':'See it on your stack';
+  document.getElementById('bookTileSub').textContent = 'Grab 15 min with a '+b.role+'.';
+  buildPlan(); buildHappening(); buildDemos(); buildBook();
+}
+function buildPlan(){
+  const body=document.getElementById('planBody'); body.innerHTML='';
+  // icebreaker from first tag
+  const firstTag = state.tags[0];
+  const ice = CONFIG.icebreakers[firstTag] || CONFIG.icebreakers._default;
+  const intro=document.createElement('div'); intro.className='card';
+  intro.innerHTML='<p class="lbl">Your night, in 3 moves</p><p>Picked from what you said you\'re into. Hit these and you\'ve seen the best of tonight.</p>';
+  body.appendChild(intro);
+  // steps: one station per tag + book
+  let n=1;
+  state.tags.forEach(id=>{
+    const t=CONFIG.interests.find(x=>x.id===id);
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML='<div class="plan-item"><span class="num">'+(n++)+'</span><div><h4>'+t.station+'</h4><p>See "'+t.demo+'" live, then ask the SE there anything.</p></div></div>';
+    body.appendChild(c);
+  });
+  const b = state.audience==='customer'?CONFIG.booking.customer:CONFIG.booking.prospect;
+  const last=document.createElement('div'); last.className='card';
+  last.innerHTML='<div class="plan-item"><span class="num">'+(n++)+'</span><div><h4>Book 15 min with a '+b.role+'</h4><p>Turn tonight into a real next step. Unlocks premium swag.</p></div></div>';
+  body.appendChild(last);
+  // icebreaker
+  const icb=document.createElement('div'); icb.className='icebreaker';
+  icb.innerHTML='<p class="lbl">Break the ice</p><p>'+ice+'</p>';
+  body.appendChild(icb);
+}
+function buildHappening(){
+  const body=document.getElementById('happeningBody'); body.innerHTML='';
+  const note=document.createElement('div'); note.innerHTML='<span class="pill-note">Sample content — swap for the venue</span>'; body.appendChild(note);
+  CONFIG.happening.forEach(sec=>{
+    const c=document.createElement('div'); c.className='card placeholder';
+    let html='<p class="lbl">'+sec.group+'</p>';
+    sec.items.forEach(it=>{ html+='<p style="color:var(--gray-10);font-size:14.5px;margin:6px 0;">• '+it+'</p>'; });
+    c.innerHTML=html; body.appendChild(c);
+  });
+}
+function buildDemos(){
+  const body=document.getElementById('demosBody'); body.innerHTML='';
+  const note=document.createElement('div'); note.innerHTML='<span class="pill-note">Placeholder links — paste real video URLs</span>'; body.appendChild(note);
+  // sort: tagged demos first
+  const sorted=[...CONFIG.demos].sort((a,b)=>{
+    const ai=state.tags.includes(a.id)?0:1, bi=state.tags.includes(b.id)?0:1; return ai-bi;
+  });
+  sorted.forEach(d=>{
+    const pick = state.tags.includes(d.id);
+    const c=document.createElement('a'); c.className='card video'; c.href=d.url; c.target='_blank';
+    c.onclick=()=>track('Demo Opened',{demo:d.title, forYou:pick});
+    c.innerHTML='<span class="thumb" style="background:'+d.color+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>'
+      +'<span style="flex:1"><h4 style="margin:0 0 3px">'+d.title+(pick?' <span style="color:var(--purple-06);font-size:12px">· for you</span>':'')+'</h4><p style="margin:0;color:var(--gray-08);font-size:13px">Captioned · '+d.len+'</p></span>';
+    body.appendChild(c);
+  });
+}
+function buildBook(){
+  const isCust = state.audience==='customer';
+  const b = isCust?CONFIG.booking.customer:CONFIG.booking.prospect;
+  document.getElementById('bookHead').textContent = isCust?'Leave with a plan':'See it on your stack';
+  const body=document.getElementById('bookBody'); body.innerHTML='';
+  const c=document.createElement('div'); c.className='card';
+  c.innerHTML='<p class="lbl">15 minutes · '+b.role+'</p><h4 style="font-size:18px">'+(isCust?'Get a tailored next step':'See Mixpanel on your stack')+'</h4><p style="font-size:14px;line-height:1.55">'+b.blurb+'</p><span class="pill-note">Booking link is a placeholder</span>';
+  body.appendChild(c);
+  const cta=document.createElement('button'); cta.className='btn btn-dark btn-block book-cta';
+  cta.innerHTML='Book my 15 minutes';
+  cta.onclick=()=>{
+    track('Session Booked', { role:b.role });
+    state.booked=true;
+    document.getElementById('bookConfirm').style.display='block';
+    cta.style.display='none';
+    // (production) window.open(b.url,'_blank')
+  };
+  body.appendChild(cta);
+  const conf=document.createElement('div'); conf.className='confirm'; conf.id='bookConfirm';
+  conf.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><h4>You\'re booked</h4><p>Show this screen at the swag station for premium swag.</p>';
+  body.appendChild(conf);
+}
+function pickSurvey(el,val){
+  document.querySelectorAll('#surveyOpts .opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel'); state.survey=val;
+  document.getElementById('surveyThanks').style.display='block';
+  track('Survey Answered', { answer:val });
+}
+document.querySelectorAll('#surveyOpts .opt').forEach(o=>{
+  o.addEventListener('click', ()=>pickSurvey(o, o.dataset.val));
+});
+
+/* ---- Loom modal ---- */
+function openLoom(){
+  document.getElementById('loom-modal').classList.add('open');
+  track('Demo Opened', { demo:'Mixpanel Agent — Hebrew', forYou:true });
+}
+function closeLoom(e){
+  if(!e || e.target===document.getElementById('loom-modal') || e.currentTarget.classList.contains('loom-close')){
+    document.getElementById('loom-modal').classList.remove('open');
+  }
+}
+
+track('App Opened', {});
+</script>
+</body>
+</html>
