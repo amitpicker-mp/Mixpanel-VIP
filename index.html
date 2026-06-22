@@ -473,7 +473,7 @@ function buildHub(){
   const b = isCust?CONFIG.booking.customer:CONFIG.booking.prospect;
   document.getElementById('bookTileTitle').textContent = isCust?'Leave with a plan':'See it on your stack';
   document.getElementById('bookTileSub').textContent = 'Grab 15 min with a '+b.role+'.';
-  buildPlan(); buildHappening(); buildDemos(); buildBook();
+  buildPlan(); buildHappening(); buildBook();
 }
 function buildPlan(){
   const body=document.getElementById('planBody'); body.innerHTML='';
